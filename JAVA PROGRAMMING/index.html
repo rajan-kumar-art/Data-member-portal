@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Data Portal</title>
+    <!-- Simple & Clean Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #a124ff;
+            --cyber-bg: #030712;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --matrix-green: #00ff66;
+            --cyber-red: #ff2a5f;
+            --cyber-orange: #ff9f1c;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Times New Roman', Times, serif; 
+        }
+
+        body { 
+            background: var(--cyber-bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(161, 36, 255, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 242, 255, 0.1) 0px, transparent 50%);
+            color: #e2e8f0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 24px; 
+            overflow-x: hidden;
+        }
+
+        .card { 
+            background: var(--panel-bg); 
+            padding: 40px; 
+            border-radius: 16px; 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.05);
+            width: 100%; 
+            max-width: 480px; 
+            text-align: center;
+            position: relative;
+        }
+
+        .card::before, .dashboard-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 15px; height: 15px; border-top: 3px solid var(--neon-blue); border-left: 3px solid var(--neon-blue);
+        }
+        .card::after, .dashboard-card::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; border-bottom: 3px solid var(--neon-purple); border-right: 3px solid var(--neon-purple);
+        }
+
+        .dashboard-card { 
+            max-width: 1240px; 
+            width: 100%; 
+            display: none; 
+            background: transparent; 
+            padding: 0; 
+            border: none; 
+            position: relative;
+        }
+
+        h2 { 
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 24px; 
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 14px 18px; 
+            margin: 10px 0 20px 0; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 8px; 
+            font-size: 16px; 
+            background: rgba(15, 23, 42, 0.6); 
+            transition: all 0.3s ease; 
+            color: #fff; 
+        }
+
+        input:focus { 
+            border-color: var(--neon-blue); 
+            outline: none; 
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+
+        button { 
+            width: 100%; 
+            padding: 16px; 
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            margin-top: 10px; 
+            transition: all 0.3s ease; 
+        }
+
+        button:hover { 
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+        }
+
+        .fingerprint-icon { 
+            font-size: 64px; 
+            margin: 30px 0; 
+            cursor: pointer; 
+            color: var(--neon-blue); 
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .hidden { display: none; }
+        
+        .form-container { 
+            background: var(--panel-bg); 
+            padding: 36px; 
+            border-radius: 16px; 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            margin-bottom: 32px; 
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .input-group { position: relative; text-align: left; }
+        .input-group label { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #94a3b8; font-weight: 600; }
+        .input-group input { margin-top: 6px; margin-bottom: 6px; }
+        
+        .error-msg { color: var(--cyber-red); font-size: 13px; font-weight: 600; display: none; margin-bottom: 12px; }
+        
+        .members-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; margin-top: 24px; }
+        .member-card { 
+            background: rgba(17, 24, 39, 0.85); 
+            border-radius: 16px; 
+            padding: 24px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            transition: all 0.3s ease; 
+        }
+        .member-card:hover { 
+            border-color: var(--neon-blue);
+            transform: translateY(-4px); 
+        }
+        
+        .member-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px; }
+        .member-header img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid rgba(0, 242, 255, 0.3); }
+        .member-title { text-align: left; }
+        .member-title h4 { font-family: 'Times New Roman', Times, serif; font-size: 18px; color: #fff; }
+        .member-title .sno-badge { background: rgba(0, 242, 255, 0.1); color: var(--neon-blue); font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700; display: inline-block; margin-bottom: 4px; border: 1px solid rgba(0, 242, 255, 0.2); }
+        
+        .member-info-columns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .info-column-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; }
+        .info-column-label { font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+        .info-column-value { font-size: 15px; font-weight: 700; color: #fff; text-align: right; max-width: 65%; word-break: break-word; }
+        
+        .locked-tag { color: var(--cyber-red); background: rgba(255, 42, 95, 0.1); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; border: 1px solid rgba(255, 42, 95, 0.2); font-family: 'Times New Roman', Times, serif; }
+        .balance-pill { color: var(--matrix-green) !important; background: rgba(0, 255, 102, 0.1); padding: 3px 10px; border-radius: 4px; border: 1px solid rgba(0, 255, 102, 0.2); }
+
+        .action-layout-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: auto; }
+        .btn-action-modern { width: 100%; margin-top: 0; padding: 10px; font-size: 12px; font-weight: 600; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255,255,255,0.05); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); font-family: 'Times New Roman', Times, serif; }
+        
+        .btn-action-modern.btn-view { background: rgba(0, 242, 255, 0.1); color: var(--neon-blue); border-color: rgba(0, 242, 255, 0.3); }
+        .btn-action-modern.btn-view:hover { background: rgba(0, 242, 255, 0.2); }
+        .btn-action-modern.btn-hide { background: rgba(255, 42, 95, 0.15); color: var(--cyber-red); border-color: rgba(255, 42, 95, 0.3); }
+        .btn-action-modern.btn-hide:hover { background: rgba(255, 42, 95, 0.25); }
+        
+        .btn-action-modern.btn-edit:hover { color: #00f2ff; border-color: var(--neon-blue); }
+        .btn-action-modern.btn-download:hover { color: #facc15; border-color: #facc15; }
+        .btn-action-modern.btn-share:hover { color: var(--matrix-green); border-color: var(--matrix-green); }
+        .btn-action-modern.btn-delete { grid-column: span 2; background: rgba(255, 42, 95, 0.05); color: var(--cyber-red); border: 1px dashed rgba(255, 42, 95, 0.3); }
+        .btn-action-modern.btn-delete:hover { background: var(--cyber-red); color: white; border-style: solid; }
+        
+        .btn-action-modern.btn-restore { background: rgba(0, 255, 102, 0.1); color: var(--matrix-green); border-color: rgba(0, 255, 102, 0.3); }
+        .btn-action-modern.btn-restore:hover { background: rgba(0, 255, 102, 0.2); }
+        .btn-action-modern.btn-perm-delete { background: rgba(255, 42, 95, 0.2); color: var(--cyber-red); border: 1px solid var(--cyber-red); }
+        .btn-action-modern.btn-perm-delete:hover { background: var(--cyber-red); color: white; }
+
+        .search-container { background: var(--panel-bg); padding: 20px; border-radius: 16px; margin-bottom: 32px; text-align: left; border: 1px solid rgba(255,255,255,0.05); }
+        .search-container h4 { font-family: 'Times New Roman', Times, serif; color: #fff; font-weight: 700; margin-bottom: 10px; font-size: 13px; }
+        .search-input { background: rgba(0, 0, 0, 0.4); margin: 0; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .btn-logout { background: rgba(255, 42, 95, 0.2); color: var(--cyber-red); border: 1px solid var(--cyber-red); width: auto; padding: 10px 20px; font-size: 14px; margin-top: 0; border-radius: 6px; }
+        .btn-logout:hover { background: var(--cyber-red); color: white; }
+        
+        .btn-trash-toggle { background: rgba(255, 159, 28, 0.15); color: var(--cyber-orange); border: 1px solid var(--cyber-orange); width: auto; padding: 10px 20px; font-size: 14px; margin-top: 0; border-radius: 6px; position: relative; }
+        .btn-trash-toggle:hover { background: var(--cyber-orange); color: black; font-weight: 700; }
+        .trash-count { position: absolute; top: -8px; right: -8px; background: var(--cyber-red); color: white; border-radius: 50%; padding: 2px 7px; font-size: 10px; font-weight: bold; border: 1px solid #fff; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 7, 18, 0.8); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(8px); }
+        .modal-content { background: #0f172a; padding: 36px; border-radius: 16px; width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--neon-blue); }
+        .modal-content h3 { font-family: 'Times New Roman', Times, serif; margin-bottom: 16px; color: #fff; }
+        .forgot-link { display: inline-block; margin-top: 12px; color: var(--neon-blue); font-size: 14px; cursor: pointer; text-decoration: underline; font-weight: 600; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-modal-close { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+
+        .toast-container { position: fixed; top: 24px; right: 24px; z-index: 10000; display: flex; flex-direction: column; gap: 14px; perspective: 1000px; }
+        .toast-box { background: rgba(15, 23, 42, 0.85); color: #f8fafc; padding: 16px 28px; border-radius: 12px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 14px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1); transform: translateX(120%) scale(0.9) rotateX(-10deg); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; text-transform: uppercase; }
+        .toast-box.show { transform: translateX(0) scale(1) rotateX(0deg); opacity: 1; }
+        .toast-box.success { border-color: rgba(0, 255, 102, 0.5); box-shadow: 0 0 20px rgba(0, 255, 102, 0.15), 0 10px 30px rgba(0, 0, 0, 0.5); }
+        .toast-box.success .toast-icon { color: var(--matrix-green); text-shadow: 0 0 8px rgba(0, 255, 102, 0.6); }
+        .toast-box.error { border-color: rgba(255, 42, 95, 0.5); box-shadow: 0 0 20px rgba(255, 42, 95, 0.15), 0 10px 30px rgba(0, 0, 0, 0.5); }
+        .toast-box.error .toast-icon { color: var(--cyber-red); text-shadow: 0 0 8px rgba(255, 42, 95, 0.6); }
+        .toast-icon { font-size: 18px; display: flex; align-items: center; justify-content: center; animation: pulseGlow 1.5s infinite ease-in-out; }
+
+        .auth-toggle-link { display: inline-block; margin-top: 18px; color: var(--neon-blue); font-size: 14px; cursor: pointer; font-weight: 600; text-decoration: underline; }
+
+        #pdf-template { font-family: 'Times New Roman', Times, serif; padding: 40px; background: #070b14; color: #fff; border: 2px solid #00f2ff; width: 100%; height: 100%; }
+        .pdf-header { text-align: center; border-bottom: 2px dashed #00f2ff; padding-bottom: 15px; margin-bottom: 30px; }
+        .pdf-body { display: flex; gap: 30px; align-items: flex-start; }
+        .pdf-photo img { width: 130px; height: 130px; border-radius: 8px; border: 2px solid #00f2ff; object-fit: cover; }
+        .pdf-details { flex-grow: 1; }
+        .pdf-details table { width: 100%; border-collapse: collapse; }
+        .pdf-details td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 16px; color: #fff; }
+        .pdf-details td.label { font-family: 'Times New Roman', Times, serif; font-weight: 700; color: #00f2ff; width: 40%; font-size: 12px; text-transform: uppercase; }
+        .pdf-footer { text-align: center; margin-top: 30px; font-size: 13px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        
+        .modern-select { background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; width: 100%; font-size: 15px; outline: none; margin-bottom: 15px; }
+        
+        /* 100% WORKING PDF FIX: Container is fully rendered but positioned off-screen behind everything */
+        #pdf-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -9999; /* Hides it behind the background */
+            width: 800px; /* Fixed width so layout doesn't break */
+            visibility: visible !important; 
+            display: block !important;
+            opacity: 0.01; /* Transparent enough not to be seen, but visible to HTML2Canvas */
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div id="lock-screen" class="card">
+        <h2>🔒 Welcome Portal</h2>
+        <p style="color: #94a3b8; font-size: 15px;">Click the button below to proceed further.</p>
+        <div class="fingerprint-icon" id="scan-fingerprint">⚡</div>
+        <p style="color: var(--neon-blue); font-size: 14px; font-weight: bold;">[ CLICK TO ENTER ]</p>
+    </div>
+
+    <div id="auth-screen" class="card hidden">
+        <h2>📧 Admin Login</h2>
+        <p style="color:#94a3b8; font-size:15px; margin-bottom:15px;">Enter your registered Email and Password</p>
+        <input type="email" id="user-email" placeholder="Enter Email ID">
+        <input type="password" id="user-password" placeholder="Enter Password">
+        <button id="btn-login">Login</button>
+        <span id="go-to-signup" class="auth-toggle-link">Create New Account</span>
+    </div>
+
+    <div id="signup-screen" class="card hidden">
+        <h2>📝 Register Admin</h2>
+        <p style="color:#94a3b8; font-size:15px; margin-bottom:15px;">Fill details to create a new admin account</p>
+        <input type="email" id="signup-email" placeholder="Enter Email ID">
+        <input type="password" id="signup-password" placeholder="Create New Password">
+        <button id="btn-signup">Register</button>
+        <span id="go-to-login" class="auth-toggle-link">Back to Login</span>
+    </div>
+
+    <div id="dashboard-screen" class="dashboard-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; background: var(--panel-bg); padding: 24px 36px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
+            <h2 id="form-heading" style="margin-bottom:0; font-size: 24px;">🔮 Member Database Dashboard</h2>
+            <div class="header-actions">
+                <span id="user-display" style="font-weight: 700; color: var(--neon-blue); font-family: 'Times New Roman', Times, serif; font-size: 13px; margin-right: 8px;"></span>
+                <button id="btn-toggle-trash" class="btn-trash-toggle">🗑️ Trash Container <span class="trash-count" id="trash-badge-count">0</span></button>
+                <button id="btn-logout" class="btn-logout">Logout</button>
+            </div>
+        </div>
+        
+        <div class="form-container" id="main-form-panel">
+            <form id="data-form" novalidate>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="member-name" placeholder="Enter Full Name">
+                        <div id="name-error" class="error-msg">Name is required.</div>
+                    </div>
+                    <div class="input-group">
+                        <label>PAN Card Number</label>
+                        <input type="text" id="member-pan" placeholder="Enter 10-Digit PAN Number" maxlength="10" style="text-transform: uppercase;">
+                        <div id="pan-error" class="error-msg">Enter a valid PAN Number (10 characters).</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Aadhaar Number</label>
+                        <input type="number" id="member-aadhaar" placeholder="Enter 12-Digit Aadhaar Number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="12">
+                        <div id="aadhaar-error" class="error-msg">Enter a valid Aadhaar Number (12 digits).</div>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="number" id="member-phone" placeholder="Enter 10-Digit Mobile Number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="10">
+                        <div id="phone-error" class="error-msg">Enter a valid Mobile Number (10 digits).</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Account Balance (₹)</label>
+                        <input type="text" id="member-balance" placeholder="Enter Amount">
+                        <div id="balance-error" class="error-msg">Balance is required.</div>
+                    </div>
+                    <div class="input-group">
+                        <label>Address</label>
+                        <input type="text" id="member-address" placeholder="Enter Full Address">
+                        <div id="address-error" class="error-msg">Address is required.</div>
+                    </div>
+                </div>
+                <div style="text-align: left; margin-top: 5px; padding-bottom: 20px;">
+                    <label style="font-size: 12px; color: #94a3b8; font-weight: 600; font-family:'Times New Roman', Times, serif; text-transform: uppercase;">Upload Profile Photo:</label>
+                    <input type="file" id="member-photo" accept="image/*" style="margin: 6px 0 0 0; padding: 12px; border: 1px dashed var(--neon-blue); border-radius: 8px; background: rgba(0,0,0,0.3);">
+                    <div id="photo-error" class="error-msg">Photo upload is required.</div>
+                </div>
+                <button type="submit" id="btn-submit-form">⚡ Save Data</button>
+                <button type="button" id="btn-cancel-edit" class="btn-modal-close" style="display:none; width:100%; margin-top:10px;">Cancel</button>
+            </form>
+        </div>
+
+        <div class="search-container" id="main-search-panel">
+            <h4>🔎 Filter List By Phone Number</h4>
+            <input type="number" id="search-phone" class="search-input" placeholder="Type phone number here to search...">
+        </div>
+
+        <div style="text-align: left; margin-bottom: 16px; padding-left: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="section-view-title" style="font-family: 'Times New Roman', Times, serif; font-size: 20px; color: #fff; text-transform: uppercase;">Saved Members List</h3>
+            <button id="btn-back-to-database" class="btn-modal-close" style="display:none; width:auto; padding:8px 16px; font-size:12px; margin-top:0;">← Back to Database</button>
+        </div>
+
+        <div class="members-grid" id="members-cards-container"></div>
+    </div>
+
+    <!-- Modals (Unchanged) -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="normal-password-block">
+                <h3>🔓 Unhide Data</h3>
+                <p style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">Enter Password (First 5 characters of PAN Card)</p>
+                <input type="password" id="modal-row-password" placeholder="Enter Password Key">
+                <span id="trigger-forgot" class="forgot-link">Unlock via Master Admin Email</span>
+            </div>
+            <div id="forgot-password-block" style="display: none;">
+                <h3 style="color: var(--cyber-red);">🔑 Master Admin Verification</h3>
+                <p style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">Enter your logged-in Admin Email ID.</p>
+                <input type="email" id="modal-master-email" placeholder="admin@email.com">
+                <span id="trigger-back-pass" class="forgot-link" style="color: #64748b;">← Back to Password Option</span>
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-modal-submit" type="button">Confirm</button>
+                <button id="btn-modal-close" class="btn-modal-close" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="color: var(--neon-blue);">📝 Authorize Edit Mode</h3>
+            <p style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">Enter Admin Password to make changes.</p>
+            <input type="password" id="edit-security-code" placeholder="Enter Admin Password">
+            <div class="modal-buttons">
+                <button id="btn-edit-verify-submit" type="button">Verify</button>
+                <button id="btn-edit-verify-close" class="btn-modal-close" type="button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-auth-modal" class="modal-overlay">
+        <div class="modal-content" style="border-color: var(--cyber-red);">
+            <h3 style="color: var(--cyber-red);" id="delete-modal-header-title">⚠️ Move to Trash Authorization</h3>
+            <p id="delete-modal-msg" style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">Enter Admin password.</p>
+            <input type="password" id="delete-security-pass" placeholder="Password">
+            <div class="modal-buttons">
+                <button id="btn-delete-verify-submit" type="button" style="background: var(--cyber-red);">Confirm</button>
+                <button id="btn-delete-verify-close" class="btn-modal-close" type="button">Abort</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="share-modern-modal" class="modal-overlay">
+        <div class="modal-content" style="border-color: var(--matrix-green);">
+            <h3 style="color: var(--matrix-green);">🔗 Secure Data Share</h3>
+            <p style="font-size: 14px; color: #94a3b8; margin-bottom: 16px;">Select transmission channel:</p>
+            <select id="share-destination-select" class="modern-select">
+                <option value="1">Forward to WhatsApp Platform</option>
+                <option value="2">Dispatch via SMS Cellular Network</option>
+            </select>
+            <div class="modal-buttons">
+                <button id="btn-share-modal-submit" type="button" style="background: var(--matrix-green); color: black;">Transmit</button>
+                <button id="btn-share-modal-close" class="btn-modal-close" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 100% WORKING PDF CONTAINER STRUCTURE -->
+    <div id="pdf-container">
+        <div id="pdf-template">
+            <div class="pdf-header">
+                <h1 style="font-family:'Times New Roman', Times, serif; color: #00f2ff; margin-bottom: 6px;">MEMBER DETAILS REPORT</h1>
+                <p style="color: #94a3b8; font-size: 14px; text-transform: uppercase;">Official Summary Receipt</p>
+            </div>
+            <div class="pdf-body">
+                <div class="pdf-photo">
+                    <img id="pdf-img" src="" alt="Photo">
+                </div>
+                <div class="pdf-details">
+                    <table>
+                        <tr>
+                            <td class="label">Serial Number</td>
+                            <td id="pdf-sno" style="font-weight: bold; font-family:'Times New Roman', Times, serif; color: var(--neon-blue);"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Full Name</td>
+                            <td id="pdf-name"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Phone Number</td>
+                            <td id="pdf-phone"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Aadhaar Card No.</td>
+                            <td id="pdf-aadhaar"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">PAN Card No.</td>
+                            <td id="pdf-pan" style="font-weight: 600; font-family:'Times New Roman', Times, serif;"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Full Address</td>
+                            <td id="pdf-address"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Total Balance</td>
+                            <td id="pdf-balance" style="color: #00ff66; font-weight: 700;"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="pdf-footer">
+                <p>Generated via Secure Database System</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            let uploadedPhotoUrl = "";
+            let globalDataStore = []; 
+            let trashDataStore = []; 
+            let currentCurrentUserEmail = ""; 
+            let unlockedRows = {}; 
+            let currentlySelectedRowId = null; 
+            let editingRecordId = null; 
+            let pendingSharePersonId = null;
+            let currentViewMode = "database"; 
+
+            function showToast(message, type = "success") {
+                let icon = type === "success" ? "⚡" : "🚨";
+                let toast = $(`
+                    <div class="toast-box ${type}">
+                        <span class="toast-icon">${icon}</span>
+                        <span class="toast-text">${message}</span>
+                    </div>
+                `);
+                
+                $('#toast-container').append(toast);
+                setTimeout(() => { toast.addClass('show'); }, 50);
+                setTimeout(() => {
+                    toast.css({'transform': 'translateX(120%) scale(0.9) rotateX(-10deg)', 'opacity': '0'});
+                    setTimeout(() => { toast.remove(); }, 400);
+                }, 3500);
+            }
+
+            $('#scan-fingerprint').on('click', function() {
+                showToast("Connection Successful.", "success");
+                $('#lock-screen').fadeOut(300, function() {
+                    $('#auth-screen').removeClass('hidden').fadeIn(300);
+                });
+            });
+
+            $('#go-to-signup').on('click', function() {
+                $('#auth-screen').fadeOut(200, function() { $('#signup-screen').removeClass('hidden').fadeIn(200); });
+            });
+
+            $('#go-to-login').on('click', function() {
+                $('#signup-screen').fadeOut(200, function() { $('#auth-screen').removeClass('hidden').fadeIn(200); });
+            });
+
+            $('#btn-signup').on('click', function() {
+                let email = $('#signup-email').val().trim().toLowerCase();
+                let password = $('#signup-password').val().trim();
+
+                if (email === "" || !email.includes('@')) { showToast("Please enter a valid Email ID!", "error"); return; }
+                if (password.length < 4) { showToast("Password must be at least 4 characters long!", "error"); return; }
+                if (localStorage.getItem("user_pwd_" + email)) { showToast("This email is already registered!", "error"); return; }
+
+                localStorage.setItem("user_pwd_" + email, password);
+                showToast("Account created successfully!", "success");
+                $('#signup-email').val(''); $('#signup-password').val('');
+                $('#go-to-login').click();
+            });
+
+            $('#btn-login').on('click', function() {
+                let email = $('#user-email').val().trim().toLowerCase();
+                let password = $('#user-password').val().trim();
+                
+                if(email === "" || !email.includes('@')) { showToast("Invalid Email format!", "error"); return; }
+
+                let registeredPassword = localStorage.getItem("user_pwd_" + email);
+                if (!registeredPassword || password !== registeredPassword) { showToast("Incorrect Email or Password!", "error"); return; }
+                
+                currentCurrentUserEmail = email;
+                $('#user-display').text("🛰️ Admin: " + email.toUpperCase());
+                
+                let savedData = localStorage.getItem("data_" + currentCurrentUserEmail);
+                globalDataStore = savedData ? JSON.parse(savedData) : [];
+                let savedTrash = localStorage.getItem("trash_" + currentCurrentUserEmail);
+                trashDataStore = savedTrash ? JSON.parse(savedTrash) : [];
+
+                updateTrashBadge();
+                currentViewMode = "database";
+                refreshCardsGrid();
+                showToast("Logged in to Dashboard!", "success");
+
+                $('#auth-screen').fadeOut(300, function() { $('#dashboard-screen').fadeIn(300); });
+            });
+
+            $('#member-photo').on('change', function(e) {
+                if(e.target.files.length === 0) { uploadedPhotoUrl = ""; return; }
+                let reader = new FileReader();
+                reader.onload = function(event) { uploadedPhotoUrl = event.target.result; $('#photo-error').hide(); }
+                reader.readAsDataURL(e.target.files[0]);
+            });
+
+            function updateTrashBadge() { $('#trash-badge-count').text(trashDataStore.length); }
+
+            function refreshCardsGrid() {
+                let container = $('#members-cards-container');
+                container.empty();
+                let activeLoopStore = (currentViewMode === "database") ? globalDataStore : trashDataStore;
+
+                if(activeLoopStore.length === 0) {
+                    let emptyMsg = (currentViewMode === "database") ? '[ NO DATA SAVED YET. PLEASE FILL OUT THE FORM ABOVE ]' : '[ TRASH CONTAINER IS COMPLETELY EMPTY ]';
+                    container.html(`<div style="grid-column: 1/-1; text-align: center; padding: 48px; background: rgba(0,0,0,0.4); border-radius: 12px; border: 2px dashed rgba(0, 242, 255, 0.2); font-family:\'Times New Roman\', Times, serif; font-size:14px; color: var(--neon-blue);">${emptyMsg}</div>`);
+                    return;
+                }
+
+                activeLoopStore.forEach(function(person, index) {
+                    let serialNumber = index + 1; 
+                    let isUnlocked = unlockedRows[person.id];
+                    let layoutActionButtons = "";
+
+                    if (currentViewMode === "database") {
+                        layoutActionButtons = `
+                            <button class="btn-action-modern ${isUnlocked ? 'btn-hide' : 'btn-view'}" onclick="handleActionToggle(${person.id})">${isUnlocked ? '🔒 Hide Data' : '👁️ View Info'}</button>
+                            <button class="btn-action-modern btn-edit" onclick="triggerSecureEdit(${person.id})">📝 Edit</button>
+                            <button class="btn-action-modern btn-download" onclick="downloadPDF(${person.id}, ${serialNumber})">📥 PDF</button>
+                            <button class="btn-action-modern btn-share" onclick="shareDetails(${person.id})">🔗 Share</button>
+                            <button class="btn-action-modern btn-delete" onclick="promptTrashPassword(${person.id})">🗑️ Move to Trash</button>
+                        `;
+                    } else {
+                        layoutActionButtons = `
+                            <button class="btn-action-modern btn-restore" style="grid-column: span 1;" onclick="restoreFromTrash(${person.id})">♻️ Restore Data</button>
+                            <button class="btn-action-modern btn-perm-delete" style="grid-column: span 1;" onclick="deletePermanently(${person.id})">❌ Delete Forever</button>
+                        `;
+                    }
+                    
+                    let cardHtml = `
+                        <div class="member-card" id="card-${person.id}" data-phone="${person.phone}">
+                            <div class="member-header">
+                                <img src="${person.photo || 'https://via.placeholder.com/150'}" alt="photo">
+                                <div class="member-title">
+                                    <span class="sno-badge">${currentViewMode === 'database' ? 'MEMBER' : 'DELETED'} #${serialNumber}</span>
+                                    <h4>${person.name}</h4>
+                                </div>
+                            </div>
+                            <div class="member-info-columns">
+                                <div class="info-column-row">
+                                    <span class="info-column-label">Phone No</span>
+                                    <span class="info-column-value">${(isUnlocked || currentViewMode === 'trash') ? person.phone : '<span class="locked-tag">🔒 LOCKED</span>'}</span>
+                                </div>
+                                <div class="info-column-row">
+                                    <span class="info-column-label">Aadhaar No</span>
+                                    <span class="info-column-value">${(isUnlocked || currentViewMode === 'trash') ? '[Aadhaar Redacted]' : '<span class="locked-tag">🔒 LOCKED</span>'}</span>
+                                </div>
+                                <div class="info-column-row">
+                                    <span class="info-column-label">PAN Card</span>
+                                    <span class="info-column-value" style="${(isUnlocked || currentViewMode === 'trash') ? 'text-transform:uppercase; font-family:\'Times New Roman\'; color: var(--neon-blue); font-size:13px;' : ''}">${(isUnlocked || currentViewMode === 'trash') ? person.pan : '<span class="locked-tag">🔒 LOCKED</span>'}</span>
+                                </div>
+                                <div class="info-column-row">
+                                    <span class="info-column-label">Address</span>
+                                    <span class="info-column-value">${(isUnlocked || currentViewMode === 'trash') ? person.address : '<span class="locked-tag">🔒 LOCKED</span>'}</span>
+                                </div>
+                                <div class="info-column-row">
+                                    <span class="info-column-label">Balance</span>
+                                    <span class="info-column-value ${(isUnlocked || currentViewMode === 'trash') ? 'balance-pill' : ''}">${(isUnlocked || currentViewMode === 'trash') ? '₹' + person.balance : '<span class="locked-tag">🔒 LOCKED</span>'}</span>
+                                </div>
+                            </div>
+                            <div class="action-layout-grid">${layoutActionButtons}</div>
+                        </div>
+                    `;
+                    container.append(cardHtml);
+                });
+            }
+
+            $('#member-name').on('input', function() { if ($(this).val().trim() !== "") $('#name-error').hide(); });
+            $('#member-pan').on('input', function() { if ($(this).val().trim().length === 10) $('#pan-error').hide(); });
+            $('#member-aadhaar').on('input', function() { if ($(this).val().trim().length === 12) $('#aadhaar-error').hide(); });
+            $('#member-phone').on('input', function() { if ($(this).val().trim().length === 10) $('#phone-error').hide(); });
+            $('#member-balance').on('input', function() { if ($(this).val().trim() !== "") $('#balance-error').hide(); });
+            $('#member-address').on('input', function() { if ($(this).val().trim() !== "") $('#address-error').hide(); });
+
+            $('#data-form').on('submit', function(e) {
+                e.preventDefault();
+
+                let name = $('#member-name').val().trim();
+                let pan = $('#member-pan').val().toUpperCase().trim();
+                let aadhaar = $('#member-aadhaar').val().trim();
+                let phone = $('#member-phone').val().trim();
+                let balanceRaw = $('#member-balance').val().trim().replace(/[₹,]/g, '');
+                let address = $('#member-address').val().trim();
+                
+                let hasError = false;
+                if (name === "") { $('#name-error').fadeIn(150); hasError = true; } else { $('#name-error').hide(); }
+                if (pan.length !== 10) { $('#pan-error').fadeIn(150); hasError = true; } else { $('#pan-error').hide(); }
+                if (aadhaar.length !== 12) { $('#aadhaar-error').fadeIn(150); hasError = true; } else { $('#aadhaar-error').hide(); }
+                if (phone.length !== 10) { $('#phone-error').fadeIn(150); hasError = true; } else { $('#phone-error').hide(); }
+                if (balanceRaw === "") { $('#balance-error').fadeIn(150); hasError = true; } else { $('#balance-error').hide(); }
+                if (address === "") { $('#address-error').fadeIn(150); hasError = true; } else { $('#address-error').hide(); }
+                if (editingRecordId === null && uploadedPhotoUrl === "") { $('#photo-error').fadeIn(150); hasError = true; } else { $('#photo-error').hide(); }
+
+                if (hasError) { showToast("Please fill all fields correctly!", "error"); return; }
+
+                let rowPassword = pan.substring(0, 5); 
+                let cleanBalance = parseFloat(balanceRaw).toLocaleString('en-IN');
+
+                if(editingRecordId !== null) {
+                    let recordIndex = globalDataStore.findIndex(item => item.id === editingRecordId);
+                    if(recordIndex !== -1) {
+                        globalDataStore[recordIndex].name = name;
+                        globalDataStore[recordIndex].pan = pan;
+                        globalDataStore[recordIndex].aadhaar = '[Aadhaar Redacted]';
+                        globalDataStore[recordIndex].phone = phone;
+                        globalDataStore[recordIndex].balance = cleanBalance;
+                        globalDataStore[recordIndex].address = address;
+                        globalDataStore[recordIndex].password = rowPassword;
+                        if(uploadedPhotoUrl !== "") { globalDataStore[recordIndex].photo = uploadedPhotoUrl; }
+                        localStorage.setItem("data_" + currentCurrentUserEmail, JSON.stringify(globalDataStore));
+                        showToast("Profile data updated successfully!", "success");
+                        resetFormState(); refreshCardsGrid();
+                    }
+                } else {
+                    let entryId = Date.now();
+                    let newPerson = { id: entryId, name: name, pan: pan, aadhaar: '[Aadhaar Redacted]', phone: phone, balance: cleanBalance, address: address, photo: uploadedPhotoUrl, password: rowPassword };
+                    globalDataStore.push(newPerson);
+                    localStorage.setItem("data_" + currentCurrentUserEmail, JSON.stringify(globalDataStore));
+                    refreshCardsGrid(); resetFormState();
+                    showToast(`Data Saved successfully! View Password Key is: ${rowPassword}`, "success");
+                }
+            });
+
+            window.triggerSecureEdit = function(id) {
+                currentlySelectedRowId = id; $('#edit-security-code').val(''); $('#edit-auth-modal').css('display', 'flex');
+            };
+
+            $('#btn-edit-verify-close').on('click', function() { $('#edit-auth-modal').hide(); currentlySelectedRowId = null; });
+            $('#btn-edit-verify-submit').on('click', function() {
+                let enteredCode = $('#edit-security-code').val().trim();
+                let registeredPassword = localStorage.getItem("user_pwd_" + currentCurrentUserEmail);
+                if (enteredCode === registeredPassword) {
+                    $('#edit-auth-modal').hide(); loadRecordIntoForm(currentlySelectedRowId);
+                } else { showToast("Incorrect Admin Password. Verification failed.", "error"); }
+            });
+
+            function loadRecordIntoForm(id) {
+                let person = globalDataStore.find(item => item.id === id);
+                if(!person) return;
+                editingRecordId = id;
+                $('#member-name').val(person.name); $('#member-pan').val(person.pan); $('#member-aadhaar').val("");
+                $('#member-phone').val(person.phone); $('#member-balance').val(person.balance.replace(/,/g, '')); $('#member-address').val(person.address);
+                $('#form-heading').text("⚙️ Edit Profile Details");
+                $('#btn-submit-form').text("💾 Update Details").css('background', 'linear-gradient(90deg, #00ff66, #00f2ff)');
+                $('#btn-cancel-edit').show(); $('html, body').animate({ scrollTop: 0 }, 'slow');
+            }
+
+            $('#btn-cancel-edit').on('click', function() { resetFormState(); });
+
+            function resetFormState() {
+                editingRecordId = null; $('#data-form')[0].reset(); uploadedPhotoUrl = ""; $('.error-msg').hide(); 
+                $('#form-heading').text("🔮 Member Database Dashboard");
+                $('#btn-submit-form').text("⚡ Save Data").css('background', 'linear-gradient(90deg, var(--neon-blue), var(--neon-purple))');
+                $('#btn-cancel-edit').hide();
+            }
+
+            window.handleActionToggle = function(id) {
+                if (unlockedRows[id]) { delete unlockedRows[id]; refreshCardsGrid(); showToast("Profile layout locked successfully."); } 
+                else {
+                    currentlySelectedRowId = id; $('#modal-row-password').val(''); $('#modal-master-email').val('');
+                    $('#normal-password-block').show(); $('#forgot-password-block').hide(); $('#password-modal').css('display', 'flex');
+                }
+            };
+
+            $('#btn-modal-close').on('click', function() { $('#password-modal').hide(); currentlySelectedRowId = null; });
+            $('#trigger-forgot').on('click', function() { $('#normal-password-block').hide(); $('#forgot-password-block').fadeIn(200); });
+            $('#trigger-back-pass').on('click', function() { $('#forgot-password-block').hide(); $('#normal-password-block').fadeIn(200); });
+
+            $('#btn-modal-submit').on('click', function() {
+                let currentItem = globalDataStore.find(item => item.id === currentlySelectedRowId);
+                if(!currentItem) return;
+                if ($('#normal-password-block').is(':visible')) {
+                    let userInput = $('#modal-row-password').val().toUpperCase().trim();
+                    if(userInput === currentItem.password) {
+                        unlockedRows[currentlySelectedRowId] = true; $('#password-modal').hide(); refreshCardsGrid(); showToast("Information decrypted successfully!");
+                    } else { showToast("Invalid password key!", "error"); }
+                } else {
+                    let userMasterEmailInput = $('#modal-master-email').val().trim().toLowerCase();
+                    if(userMasterEmailInput === currentCurrentUserEmail) {
+                        unlockedRows[currentlySelectedRowId] = true; $('#password-modal').hide(); refreshCardsGrid(); showToast("Master bypass verified! Row decrypted.", "success");
+                    } else { showToast("Access Denied! Master verification email doesn't match.", "error"); }
+                }
+            });
+
+            window.promptTrashPassword = function(id) {
+                currentlySelectedRowId = id; $('#delete-security-pass').val('');
+                $('#delete-modal-header-title').text("⚠️ Move to Trash Authorization");
+                $('#delete-modal-msg').text("Enter Admin password to move this profile to trash.");
+                $('#btn-delete-verify-submit').text("Confirm Move").css('background', 'var(--cyber-red)');
+                $('#delete-auth-modal').css('display', 'flex');
+            };
+
+            $('#btn-delete-verify-close').on('click', function() { $('#delete-auth-modal').hide(); currentlySelectedRowId = null; });
+            $('#btn-delete-verify-submit').on('click', function() {
+                let enteredPassword = $('#delete-security-pass').val().trim();
+                let registeredPassword = localStorage.getItem("user_pwd_" + currentCurrentUserEmail);
+                if (enteredPassword === registeredPassword) {
+                    $('#delete-auth-modal').hide();
+                    if (currentViewMode === "database") moveItemToTrash(currentlySelectedRowId); else executePermanentDelete(currentlySelectedRowId);
+                } else { showToast("Password validation failed! Secure access denied.", "error"); }
+            });
+
+            function moveItemToTrash(id) {
+                let recordIndex = globalDataStore.findIndex(item => item.id === id);
+                if(recordIndex !== -1) {
+                    let removedItem = globalDataStore.splice(recordIndex, 1)[0];
+                    trashDataStore.push(removedItem);
+                    localStorage.setItem("data_" + currentCurrentUserEmail, JSON.stringify(globalDataStore));
+                    localStorage.setItem("trash_" + currentCurrentUserEmail, JSON.stringify(trashDataStore));
+                    delete unlockedRows[id]; updateTrashBadge(); refreshCardsGrid();
+                    showToast("Profile successfully sent to trash panel.", "success");
+                }
+            }
+
+            window.restoreFromTrash = function(id) {
+                let recordIndex = trashDataStore.findIndex(item => item.id === id);
+                if (recordIndex !== -1) {
+                    let restoredItem = trashDataStore.splice(recordIndex, 1)[0];
+                    globalDataStore.push(restoredItem);
+                    localStorage.setItem("data_" + currentCurrentUserEmail, JSON.stringify(globalDataStore));
+                    localStorage.setItem("trash_" + currentCurrentUserEmail, JSON.stringify(trashDataStore));
+                    updateTrashBadge(); refreshCardsGrid(); showToast("Data Profile restored back to active database.", "success");
+                }
+            };
+
+            window.deletePermanently = function(id) {
+                currentlySelectedRowId = id; $('#delete-security-pass').val('');
+                $('#delete-modal-header-title').text("🚨 PERMANENT DELETION WARNING");
+                $('#delete-modal-msg').html("This action CANNOT be undone. Enter your Admin password to permanently destroy this card record node.");
+                $('#btn-delete-verify-submit').text("PERMANENTLY DESTROY").css('background', '#ff0000');
+                $('#delete-auth-modal').css('display', 'flex');
+            };
+
+            function executePermanentDelete(id) {
+                let recordIndex = trashDataStore.findIndex(item => item.id === id);
+                if (recordIndex !== -1) {
+                    trashDataStore.splice(recordIndex, 1);
+                    localStorage.setItem("trash_" + currentCurrentUserEmail, JSON.stringify(trashDataStore));
+                    updateTrashBadge(); refreshCardsGrid(); showToast("Record permanent wiped from local storage registry.", "success");
+                }
+            }
+
+            $('#btn-toggle-trash').on('click', function() {
+                if (currentViewMode === "database") {
+                    currentViewMode = "trash";
+                    $(this).html("🛰️ View Main Database").css({ 'background': 'rgba(0, 242, 255, 0.1)', 'color': 'var(--neon-blue)', 'border-color': 'var(--neon-blue)' });
+                    $('#main-form-panel').hide(); $('#main-search-panel').hide(); $('#section-view-title').text("🗑️ Deleted Trash Storage Hub"); $('#btn-back-to-database').show();
+                } else { switchToMainDatabaseView(); }
+                refreshCardsGrid();
+            });
+
+            $('#btn-back-to-database').on('click', function() { switchToMainDatabaseView(); refreshCardsGrid(); });
+
+            function switchToMainDatabaseView() {
+                currentViewMode = "database";
+                $('#btn-toggle-trash').html('🗑️ Trash Container <span class="trash-count" id="trash-badge-count">' + trashDataStore.length + '</span>').css({ 'background': 'rgba(255, 159, 28, 0.15)', 'color': 'var(--cyber-orange)', 'border-color': 'var(--cyber-orange)' });
+                $('#main-form-panel').fadeIn(200); $('#main-search-panel').fadeIn(200);
+                $('#section-view-title').text("Saved Members List"); $('#btn-back-to-database').hide();
+            }
+
+            $('#search-phone').on('input', function() {
+                let filterVal = $(this).val().trim();
+                if(filterVal === "") { $('.member-card').show(); } 
+                else {
+                    $('.member-card').each(function() {
+                        let rowPhone = $(this).attr('data-phone');
+                        if(rowPhone && rowPhone.includes(filterVal)) $(this).show(); else $(this).hide();
+                    });
+                }
+            });
+
+            window.shareDetails = function(id) { pendingSharePersonId = id; $('#share-modern-modal').css('display', 'flex'); };
+            $('#btn-share-modal-close').on('click', function() { $('#share-modern-modal').hide(); pendingSharePersonId = null; });
+            $('#btn-share-modal-submit').on('click', function() {
+                let shareTargetPerson = globalDataStore.find(item => item.id === pendingSharePersonId);
+                if (!shareTargetPerson) return;
+                let selectedGateway = $('#share-destination-select').val();
+                let shareMessageText = `*Secure Profile System Transmission*\\n\\nName: ${shareTargetPerson.name}\\nPhone: ${shareTargetPerson.phone}\\nPAN: ${shareTargetPerson.pan}\\nAddress: ${shareTargetPerson.address}\\nBalance: ₹${shareTargetPerson.balance}`;
+                $('#share-modern-modal').hide();
+                if (selectedGateway === "1") { window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(shareMessageText), '_blank'); showToast("Redirected to WhatsApp Transmission Gateway!"); } 
+                else { window.open("sms:?body=" + encodeURIComponent(shareMessageText), '_blank'); showToast("Redirected to Mobile Network Core System!"); }
+                pendingSharePersonId = null;
+            });
+
+            // 100% WORKING PDF FIX FUNCTION
+            window.downloadPDF = function(id, serialNo) {
+                let person = globalDataStore.find(item => item.id === id);
+                if (!person) return;
+
+                // डेटा भरें
+                $('#pdf-sno').text(serialNo);
+                $('#pdf-name').text(person.name);
+                $('#pdf-phone').text(person.phone);
+                $('#pdf-aadhaar').text('[Aadhaar Redacted]');
+                $('#pdf-pan').text(person.pan);
+                $('#pdf-address').text(person.address);
+                $('#pdf-balance').text("₹" + person.balance);
+                $('#pdf-img').attr('src', person.photo || 'https://via.placeholder.com/150');
+
+                // PDF लाइब्रेरी को सीधा एलिमेंट दें। अब कोई Display None / Block का झंझट नहीं!
+                const element = document.getElementById('pdf-template');
+                
+                const pdfOptionsConfig = {
+                    margin: 10,
+                    filename: 'Member_Report_' + person.name.replace(/\s+/g, '_') + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false 
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(pdfOptionsConfig).from(element).save().then(() => {
+                    showToast("PDF report downloaded successfully!");
+                }).catch((err) => {
+                    showToast("Error generating PDF document.", "error");
+                    console.error(err);
+                });
+            };
+
+            $('#btn-logout').on('click', function() {
+                currentCurrentUserEmail = ""; globalDataStore = []; trashDataStore = []; unlockedRows = {}; resetFormState();
+                $('#user-email').val(''); $('#user-password').val('');
+                $('#dashboard-screen').fadeOut(300, function() { $('#auth-screen').removeClass('hidden').fadeIn(300); });
+                showToast("Admin Session Cleared securely.");
+            });
+        });
+    </script>
+</body>
+</html>
